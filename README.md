@@ -23,7 +23,3 @@
 
 - 阅读[docs](https://github.com/liantian-cn/Terminal/tree/main/docs/)的文档，书写循环。
 - 循环放置于`terminal\rotation`目录。
-
-## 问题提交
-
--
