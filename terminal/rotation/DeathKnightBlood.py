@@ -1,5 +1,5 @@
 # from __future__ import annotations
-# from datetime import datetime
+from datetime import datetime
 
 from terminal.context import Context
 from .base import BaseRotation
@@ -22,18 +22,19 @@ class DeathKnightBlood(BaseRotation):
             "focus死神印记": "ALT-NUMPAD6",
             "target心脏打击": "ALT-NUMPAD7",
             "focus心脏打击": "ALT-NUMPAD8",
-            "target迎头痛击": "ALT-NUMPAD9",
-            "focus迎头痛击": "ALT-NUMPAD0",
+            "target心灵冰冻": "ALT-NUMPAD9",
+            "focus心灵冰冻": "ALT-NUMPAD0",
             "就近灵界打击": "SHIFT-NUMPAD1",
             "就近心脏打击": "SHIFT-NUMPAD2",
             "死神的抚摩": "SHIFT-NUMPAD3",
-            "mouseover枯萎凋零": "SHIFT-NUMPAD4",
+            "player枯萎凋零": "SHIFT-NUMPAD4",
+            "cursor枯萎凋零": "SHIFT-NUMPAD7",
             "血液沸腾": "SHIFT-NUMPAD5",
             "亡者复生": "SHIFT-NUMPAD6",
         }
 
     def main_rotation(self, ctx: Context) -> tuple[str, float, str]:
-        # print(f"{datetime.now()}", end=";")
+
         runic_power_max_cell = ctx.setting.cell(0)
         if runic_power_max_cell is None:
             runic_power_max = 120
@@ -77,7 +78,7 @@ class DeathKnightBlood(BaseRotation):
         target = ctx.target
         focus = ctx.focus
         mouseover = ctx.mouseover
-
+        # print(interrupt_blacklist)
         # print(f"当前符文数量: {runes}, 当前符能: {runic_power}, 打断模式: {dk_interrupt_mode}, 灵打生命值阈值: {ds_health_threshold}, 灵打符能溢出阈值: {ds_power_overflow_threshold}   ")
 
         if not ctx.enable:
@@ -100,7 +101,7 @@ class DeathKnightBlood(BaseRotation):
             return self.idle("正在施法")
 
         if player.channelIcon is not None:
-            print(f"正在引导{player.channelIcon}")
+            # print(f"正在引导{player.channelIcon}")
             return self.idle("正在引导")
 
         if player.isEmpowering:
@@ -112,6 +113,7 @@ class DeathKnightBlood(BaseRotation):
         if not player.isInCombat:
             return self.idle("未进入战斗")
 
+        print(f"{datetime.now()}", end=";")
         # 主目标，必须是近战的可工具目标。
         main_target = None
         if focus.exists and focus.canAttack and focus.isInMeleeRange:
@@ -124,7 +126,7 @@ class DeathKnightBlood(BaseRotation):
             if target.exists and target.canAttack and target.isInRangedRange:
                 pass
             else:
-                print("当前目标不可攻击或不在远程范围，且焦点也不可攻击或不在近战范围，无法使用技能")
+                # print("当前目标不可攻击或不在远程范围，且焦点也不可攻击或不在近战范围，无法使用技能")
                 return self.idle("没有合适的目标")
         # print(main_target.unitToken)
         # print(player.enemyCount)
@@ -140,12 +142,13 @@ class DeathKnightBlood(BaseRotation):
             elif player.enemyCount >= 1:
                 return self.cast("就近灵界打击")
                 # print("就近灵界打击")
-
+        print(dk_interrupt_mode)
         # 打断逻辑
         target_need_interrupt = False
         focus_need_interrupt = False
         if focus.exists and focus.canAttack and focus.isInMeleeRange:
             if (focus.anyCastIcon is not None) and focus.anyCastIsInterruptible:
+                # print(focus.anyCastIcon)
                 if dk_interrupt_mode == "any":
                     focus_need_interrupt = True
                 elif dk_interrupt_mode == "blacklist":
@@ -154,7 +157,11 @@ class DeathKnightBlood(BaseRotation):
                         focus_need_interrupt = True
 
         if target.exists and target.canAttack and target.isInMeleeRange:
+            # if target.castIcon:
+            #     if target.castIsInterruptible:
+            #         print("当前目标在施法,当前目标施法可以打断")
             if (target.anyCastIcon is not None) and target.anyCastIsInterruptible:
+                # print("a")
                 if dk_interrupt_mode == "any":
                     target_need_interrupt = True
                 elif dk_interrupt_mode == "blacklist":
@@ -162,12 +169,12 @@ class DeathKnightBlood(BaseRotation):
                     if not (target.anyCastIcon in interrupt_blacklist):
                         target_need_interrupt = True
 
-        if ctx.spell_cooldown_ready("迎头痛击", spell_queue_window, ignore_gcd=True):
+        if ctx.spell_cooldown_ready("心灵冰冻", spell_queue_window, ignore_gcd=True):
             if focus_need_interrupt:
-                return self.cast("focus迎头痛击")
+                return self.cast("focus心灵冰冻")
                 # print("focus迎头痛击")
             elif target_need_interrupt:
-                return self.cast("target迎头痛击")
+                return self.cast("target心灵冰冻")
                 # print("target迎头痛击")
 
         # 白骨之盾
@@ -225,7 +232,7 @@ class DeathKnightBlood(BaseRotation):
                         # print(f"{main_target.unitToken}精髓分裂", end="; ")
 
         # 如果破灭的剩余时间小于5秒，那么无论如何都用了。
-        if MarrowrendUsable and (main_target is not None) and (0 < ExterminateRemainingTime < 5):
+        if MarrowrendUsable and (main_target is not None) and (ExterminateRemainingTime > 0):
             return self.cast(f"{main_target.unitToken}精髓分裂")
             # print(f"{main_target.unitToken}精髓分裂", end="; ")
 
@@ -235,8 +242,13 @@ class DeathKnightBlood(BaseRotation):
         # 鼠标指向存在，且是敌人，且在近战范围内，就用鼠标指向的目标。
         if ctx.spell_charges_ready("枯萎凋零", 2, spell_queue_window):
             if (not ctx.use_mouse) and (not player.isMoving) and (not player.hasBuff("枯萎凋零")):
+                return self.cast("player枯萎凋零")
+                # print("mouseover枯萎凋零", end="; ")
+
+        if ctx.spell_charges_ready("枯萎凋零", 1, spell_queue_window):
+            if (not ctx.use_mouse) and (not player.isMoving) and (not player.hasBuff("枯萎凋零")):
                 if mouseover.exists and mouseover.canAttack and mouseover.isInMeleeRange:
-                    return self.cast("mouseover枯萎凋零")
+                    return self.cast("cursor枯萎凋零")
                     # print("mouseover枯萎凋零", end="; ")
 
         # 进展范围有敌人，就积极用血沸
@@ -287,5 +299,8 @@ class DeathKnightBlood(BaseRotation):
             # print("亡者复生", end="; ")
             return self.cast("亡者复生")
 
-        # print("end")
+        if DeathCaressUsable:
+            return self.cast("死神的抚摩")
+
+        print("end")
         return self.idle("当前没有合适动作")
