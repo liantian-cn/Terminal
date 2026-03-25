@@ -99,7 +99,8 @@ def get_enemy_status(matrix: MatrixDecoder, x: int, y: int) -> dict[str, Any]:
     else:
         status['unitCastIcon'] = matrix.getBadgeCell(x+6, y+0).title     # 正在释放的技能
         status['unitCastDuration'] = matrix.getCell(x+10, y+0).percent  # 施法持续时间
-        status['unitCastIsInterruptible'] = matrix.getCell(x+11, y+0).is_not_black  # 施法是否可中断
+        # status['unitCastIsInterruptible'] = matrix.getCell(x+11, y+0).is_not_black  # 施法是否可中断
+        status['unitCastIsInterruptible'] = bool(matrix.getCell(x+11, y+0).color_string == '255,255,60')  # 施法是否可中断
 
     if matrix.getBadgeCell(x+8, y+0).is_black:
         status['unitChannelIcon'] = None
@@ -108,7 +109,8 @@ def get_enemy_status(matrix: MatrixDecoder, x: int, y: int) -> dict[str, Any]:
     else:
         status['unitChannelIcon'] = matrix.getBadgeCell(x+8, y+0).title     # 正在通道法术的技能
         status['unitChannelDuration'] = matrix.getCell(x+10, y+1).percent  # 通道持续时间
-        status['unitChannelIsInterruptible'] = matrix.getCell(x+11, y+1).is_not_black  # 通道是否可中断
+        # status['unitChannelIsInterruptible'] = matrix.getCell(x+11, y+1).is_not_black  # 通道是否可中断
+        status['unitChannelIsInterruptible'] = bool(matrix.getCell(x+11, y+1).color_string == '255,255,60')  # 通道是否可中断
 
     return status
 
