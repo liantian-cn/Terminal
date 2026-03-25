@@ -1,32 +1,101 @@
 # Terminal 解码协议
 
-这份文档定义 `Terminal` 读取和理解的显示协议。这里只描述“画面代表什么”，不讨论 WoW 端怎么生成。
+这份文档定义 Terminal 读取到的“屏幕协议”。
 
-## 术语
+重点不是 WoW 内部状态，而是这块矩阵在屏幕上长什么样、每个像素块代表什么、解码后输出什么结构。
 
-- `Matrix`: 像素矩阵，当前实现是按 Cell 网格排布
-- `Cell`: 4x4 像素块，主要表达布尔和数值映射
-- `MegaCell`: 8x8 纯色块
-- `BadgeCell`: 8x8 图标块，右下角附带 2x2 脚标
-- `CharCell`: 8x8 文本像素块
+## 基本单位
 
-## 坐标
+- `Cell`: 4x4 像素块，实际取中间 2x2 作为有效区域。
+- `MegaCell`: 8x8 像素块，实际取中间 6x6 作为有效区域。
+- `BadgeCell`: 8x8 像素块，实际取中间 6x6 作为图标主体；右下角 2x2 是脚标；中心 2x2 用来判断是否黑块。
+- `CharCell`: 8x8 像素块，通过白点数量解出简单字符数值。
 
-- 矩阵坐标以 Cell 为基本单位
-- 当前实现里的 Matrix 大小是 `84 x 28`
-- 这个尺寸是当前实现，不应该被写死成永远不变的常量真理
+坐标单位统一按 `Cell` 计算，不按像素计算。
 
-## 解码约束
+## 当前矩阵尺寸
 
-- `Terminal` 读取的是显示协议，不是 WoW 内部状态
-- 颜色、图标类型、标记区，都是协议字段，不能靠猜
-- 如果协议要改，先改这份文档，再安排代码变更
+- 当前实现按 `84 x 28` 个 `Cell` 解码。
+- 这不是抽象理论，是当前仓库代码依赖的运行契约。
+- 如果矩阵尺寸将来变化，至少要同步修改代码和这里。
 
-## 协议内容
+## 帧有效性校验
 
-- Cell 类型和尺寸语义
-- Matrix 坐标与尺寸语义
-- 颜色与标记区语义
-- 哪些区域是稳定锚点，哪些区域是动态内容
+当前 `FrameDecodeWorker` 在真正提取数据前，要求一帧同时满足：
 
-颜色细节单独见 `03_color_conventions.md`。
+- `getCell(54, 9)` 必须是纯黑或纯白
+- `getCell(0, 0)` 必须是纯色
+- `getCell(82, 2)` 必须是纯白
+- `readCharCell(0, 2)` 不能为 `0`
+
+这些检查失败时，这一帧会被当成无效帧，不进入 `extract_all_data()`。
+
+## 解码输出结构
+
+`pixelcalc.extractor.extract_all_data()` 当前输出的顶层键：
+
+- `timestamp`
+- `spell`
+- `player`
+- `target`
+- `focus`
+- `mouseover`
+- `misc`
+- `spec`
+- `setting`
+- `party`
+- `assisted_combat`
+- `flash`
+- `delay`
+- `testCell`
+- `enable`
+- `dispel_blacklist`
+- `interrupt_blacklist`
+- `spell_queue_window`
+
+### `spell`
+
+列表项结构：
+
+- `is_charge`
+- `charges`
+- `title`
+- `cooldown`
+- `highlight`
+- `is_usable`
+- `is_known`
+
+### `aura`
+
+列表项结构：
+
+- `title`
+- `remain`
+- `color_string`
+- `type`
+- `count`
+
+### `unit`
+
+`player` / `target` / `focus` / `mouseover` / `party[n]` 统一按这种大结构组织：
+
+- `unitToken`
+- `exists`
+- `buff`
+- `debuff`
+- `status`
+
+但并不是所有 `unit` 都有完全相同的 `status` 字段。`context/Unit` 正是用来把这些差异包装成更好用的 API。
+
+### `spec` 和 `setting`
+
+- 这两块目前故意保持为“原始 Cell 字典”，不直接在 `pixelcalc` 层做业务语义命名。
+- `context/CellDict` 只是提供轻量读取接口，没有替你定义业务含义。
+- 如果要正式约定某个索引的意义，先补这里，再决定要不要改 `context/`。
+
+## 协议约束
+
+- 颜色语义要结合 `03_color_conventions.md` 一起看。
+- `context/` 可以包装 `decoded_data`，但不能偷改协议本义。
+- `rotation/` 只能消费 `Context` 或 `decoded_data`，不应该反向定义协议。
+- 如果改了 `extract_all_data()` 的字段结构，这份文档必须跟着改。
