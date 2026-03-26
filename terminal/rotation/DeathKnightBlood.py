@@ -72,7 +72,7 @@ class DeathKnightBlood(BaseRotation):
         else:
             reaper_mark_health_threshold = int(reaper_mark_health_threshold_cell.mean)
         # print(f"runic_power={runic_power}, runes={runes}, dk_interrupt_mode={dk_interrupt_mode}, ds_health_threshold={ds_health_threshold}, ds_power_overflow_threshold={ds_power_overflow_threshold}, reaper_mark_health_threshold={reaper_mark_health_threshold}", end="; ")
-
+        is_opener = float(ctx.combat_time) <= 10
         spell_queue_window = float(ctx.spell_queue_window or 0.3)
         player = ctx.player
         target = ctx.target
@@ -240,7 +240,7 @@ class DeathKnightBlood(BaseRotation):
         # 2层才用。
         # 不能用鼠标的时候。 不能移动的时候。 身上没有枯萎凋零buff的时候。
         # 鼠标指向存在，且是敌人，且在近战范围内，就用鼠标指向的目标。
-        if ctx.spell_charges_ready("枯萎凋零", 2, spell_queue_window):
+        if ctx.spell_charges_ready("枯萎凋零", 1, spell_queue_window):
             if (not ctx.use_mouse) and (not player.isMoving) and (not player.hasBuff("枯萎凋零")):
                 return self.cast("player枯萎凋零")
                 # print("mouseover枯萎凋零", end="; ")
