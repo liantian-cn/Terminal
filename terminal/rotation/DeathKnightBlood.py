@@ -73,7 +73,7 @@ class DeathKnightBlood(BaseRotation):
             reaper_mark_health_threshold = int(reaper_mark_health_threshold_cell.mean)
         # print(f"runic_power={runic_power}, runes={runes}, dk_interrupt_mode={dk_interrupt_mode}, ds_health_threshold={ds_health_threshold}, ds_power_overflow_threshold={ds_power_overflow_threshold}, reaper_mark_health_threshold={reaper_mark_health_threshold}", end="; ")
 
-        spell_queue_window = float(ctx.spell_queue_window or 0.2)
+        spell_queue_window = float(ctx.spell_queue_window or 0.3)
         player = ctx.player
         target = ctx.target
         focus = ctx.focus
@@ -202,7 +202,7 @@ class DeathKnightBlood(BaseRotation):
         # 2符文=3骨盾
         # 可打出镰刀
         # 留镰刀则不能用
-        MarrowrendUsable = ctx.spell_cooldown_ready("精髓分裂", spell_queue_window)
+        MarrowrendUsable = ctx.spell_cooldown_ready("精髓分裂", spell_queue_window, ignore_usable=True)
         # print(f"精髓分裂可用: {MarrowrendUsable}", end="; ")
 
         # 补骨盾逻辑，当骨盾剩余层数<5，并且骨盾剩余时间<5秒时，要积极的补骨盾。
@@ -284,6 +284,14 @@ class DeathKnightBlood(BaseRotation):
                 return self.cast("死神的抚摩")
                 # print("死神的抚摩", end="; ")
 
+        # 亡者复生是随便的填充技能。没有任何消耗，也聊胜于无。
+        if ctx.spell_cooldown_ready("亡者复生", spell_queue_window):
+            # print("亡者复生", end="; ")
+            return self.cast("亡者复生")
+
+        if DeathCaressUsable:
+            return self.cast("死神的抚摩")
+
         # 心打作为填充技能。
         if runes > 1:
             if ctx.spell_cooldown_ready("心脏打击", spell_queue_window):
@@ -294,13 +302,5 @@ class DeathKnightBlood(BaseRotation):
                     return self.cast("就近心脏打击")
                     # print("就近心脏打击", end="; ")
 
-        # 亡者复生是随便的填充技能。没有任何消耗，也聊胜于无。
-        if ctx.spell_cooldown_ready("亡者复生", spell_queue_window):
-            # print("亡者复生", end="; ")
-            return self.cast("亡者复生")
-
-        if DeathCaressUsable:
-            return self.cast("死神的抚摩")
-
-        print("end")
+        # print("end")
         return self.idle("当前没有合适动作")

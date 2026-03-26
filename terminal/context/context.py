@@ -40,29 +40,30 @@ class Context:
         else:
             return True  # 没有公共冷却时间这个技能，说明版本比较老，先默认它永远准备好了。
 
-    def spell_cooldown_ready(self, spell_name: str, queue_window: float = 0.2, ignore_gcd=False) -> bool:
+    def spell_cooldown_ready(self, spell_name: str, queue_window: float = 0.2, ignore_gcd=False, ignore_usable=False) -> bool:
         spell = self.spell(spell_name)
         if spell is None:
             return False
-        if spell.is_known and spell.is_usable:
-            if spell.cooldown <= queue_window:
-                if ignore_gcd:
-                    return True
-                else:
-                    return self.gcd_ready(queue_window)
+        if not spell.is_known:
+            return False
+        if not (spell.is_usable or ignore_usable):
+            return False
+        if spell.cooldown <= queue_window:
+            return ignore_gcd or self.gcd_ready(queue_window)
         return False
 
-    def spell_charges_ready(self, spell_name: str, charges: int, queue_window: float = 0.2, ignore_gcd=False) -> bool:
+    def spell_charges_ready(self, spell_name: str, charges: int, queue_window: float = 0.2, ignore_gcd=False, ignore_usable=False) -> bool:
         spell = self.spell(spell_name)
         if spell is None:
             return False
-        if not (spell.is_known and spell.is_usable and spell.is_charge):
+        if not (spell.is_charge):
+            return False
+        if not spell.is_known:
+            return False
+        if not (spell.is_usable or ignore_usable):
             return False
         if spell.charges >= charges:
-            if ignore_gcd:
-                return True
-            else:
-                return self.gcd_ready(queue_window)
+            return ignore_gcd or self.gcd_ready(queue_window)
         return False
 
     @property
