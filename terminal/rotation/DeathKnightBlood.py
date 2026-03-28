@@ -113,7 +113,7 @@ class DeathKnightBlood(BaseRotation):
         if not player.isInCombat:
             return self.idle("未进入战斗")
 
-        print(f"{datetime.now()}", end=";")
+        # print(f"{datetime.now()}", end=";")
         # 主目标，必须是近战的可工具目标。
         main_target = None
         if focus.exists and focus.canAttack and focus.isInMeleeRange:
@@ -142,7 +142,7 @@ class DeathKnightBlood(BaseRotation):
             elif player.enemyCount >= 1:
                 return self.cast("就近灵界打击")
                 # print("就近灵界打击")
-        print(dk_interrupt_mode)
+        # print(dk_interrupt_mode)
         # 打断逻辑
         target_need_interrupt = False
         focus_need_interrupt = False
